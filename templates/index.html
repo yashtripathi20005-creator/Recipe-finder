@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Finder - Search by Ingredients</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍳 Recipe Finder</h1>
+            <p>Search recipes by ingredients you have at home</p>
+        </header>
+
+        <div class="search-section">
+            <div class="input-group">
+                <div class="tag-input-container">
+                    <div id="tags-container" class="tags-container">
+                        <input type="text" id="ingredient-input" placeholder="Type an ingredient and press Enter..." autocomplete="off">
+                    </div>
+                </div>
+                <div id="suggestions" class="suggestions-list"></div>
+            </div>
+
+            <div class="search-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="match-all">
+                    Match all ingredients (strict search)
+                </label>
+                <button id="search-btn" class="btn btn-primary">🔍 Find Recipes</button>
+                <button id="clear-btn" class="btn btn-secondary">Clear All</button>
+            </div>
+        </div>
+
+        <div id="results-section">
+            <div id="result-count" class="result-count"></div>
+            <div id="recipes-container" class="recipes-grid">
+                <!-- Recipes will be displayed here -->
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Searching for recipes...</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedIngredients = [];
+
+        // DOM Elements
+        const ingredientInput = document.getElementById('ingredient-input');
+        const tagsContainer = document.getElementById('tags-container');
+        const suggestionsContainer = document.getElementById('suggestions');
+        const searchBtn = document.getElementById('search-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const recipesContainer = document.getElementById('recipes-container');
+        const resultCount = document.getElementById('result-count');
+        const loading = document.getElementById('loading');
+        const matchAllCheckbox = document.getElementById('match-all');
+
+        // Add ingredient tag
+        function addIngredient(ingredient) {
+            ingredient = ingredient.trim().toLowerCase();
+            if (ingredient && !selectedIngredients.includes(ingredient)) {
+                selectedIngredients.push(ingredient);
+                renderTags();
+                ingredientInput.value = '';
+                suggestionsContainer.innerHTML = '';
+                ingredientInput.focus();
+            }
+        }
+
+        // Remove ingredient tag
+        function removeIngredient(ingredient) {
+            selectedIngredients = selectedIngredients.filter(ing => ing !== ingredient);
+            renderTags();
+        }
+
+        // Render tags
+        function renderTags() {
+            // Remove existing tags (keep the input)
+            const existingTags = tagsContainer.querySelectorAll('.tag');
+            existingTags.forEach(tag => tag.remove());
+
+            selectedIngredients.forEach(ing => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.innerHTML = `
+                    ${ing}
+                    <span class="tag-remove" onclick="removeIngredient('${ing}')">×</span>
+                `;
+                tagsContainer.insertBefore(tag, ingredientInput);
+            });
+        }
+
+        // Get ingredient suggestions
+        async function getSuggestions(query) {
+            if (query.length < 2) {
+                suggestionsContainer.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/suggest?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.suggestions && data.suggestions.length > 0) {
+                    suggestionsContainer.innerHTML = data.suggestions
+                        .map(sug => `<div class="suggestion-item" onclick="addIngredient('${sug}')">${sug}</div>`)
+                        .join('');
+                } else {
+                    suggestionsContainer.innerHTML = '<div class="suggestion-item no-suggestion">No suggestions found</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+            }
+        }
+
+        // Search recipes
+        async function searchRecipes() {
+            if (selectedIngredients.length === 0) {
+                alert('Please add at least one ingredient to search.');
+                return;
+            }
+
+            // Show loading
+            loading.style.display = 'block';
+            recipesContainer.innerHTML = '';
+            resultCount.textContent = '';
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ingredients: selectedIngredients,
+                        match_all: matchAllCheckbox.checked
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayRecipes(data.recipes, data.count);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error searching recipes:', error);
+                alert('An error occurred while searching. Please try again.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Display recipes
+        function displayRecipes(recipes, count) {
+            if (count === 0) {
+                resultCount.textContent = 'No recipes found with these ingredients. Try different ingredients!';
+                recipesContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>😕 No recipes found</p>
+                        <p>Try adding more ingredients or using more common ones.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            resultCount.textContent = `Found ${count} recipe${count > 1 ? 's' : ''}`;
+
+            recipesContainer.innerHTML = recipes.map(recipe => `
+                <div class="recipe-card">
+                    <h3>${recipe.name}</h3>
+                    <div class="recipe-meta">
+                        <span class="meta-item">⏱ ${recipe.prep_time}</span>
+                        <span class="meta-item">📊 ${recipe.difficulty}</span>
+                    </div>
+                    <div class="recipe-ingredients">
+                        <strong>Ingredients:</strong>
+                        <ul>
+                            ${recipe.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="recipe-instructions">
+                        <strong>Instructions:</strong>
+                        <p>${recipe.instructions}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event Listeners
+        ingredientInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const ingredient = ingredientInput.value.trim();
+                if (ingredient) {
+                    addIngredient(ingredient);
+                }
+            }
+        });
+
+        ingredientInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            getSuggestions(query);
+        });
+
+        ingredientInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                suggestionsContainer.innerHTML = '';
+            }, 200);
+        });
+
+        searchBtn.addEventListener('click', searchRecipes);
+
+        clearBtn.addEventListener('click', () => {
+            selectedIngredients = [];
+            renderTags();
+            recipesContainer.innerHTML = '';
+            resultCount.textContent = '';
+            ingredientInput.focus();
+        });
+
+        // Allow clicking outside suggestions to close them
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.input-group')) {
+                suggestionsContainer.innerHTML = '';
+            }
+        });
+
+        // Load initial recipes on page load
+        window.addEventListener('load', () => {
+            // Show some default recipes
+            const defaultRecipes = [
+                {
+                    name: "Spaghetti Carbonara",
+                    ingredients: ["pasta", "eggs", "parmesan", "bacon", "black pepper"],
+                    instructions: "1. Cook pasta. 2. Fry bacon. 3. Mix eggs with parmesan. 4. Combine everything.",
+                    prep_time: "20 minutes",
+                    difficulty: "Medium"
+                },
+                {
+                    name: "Chicken Stir Fry",
+                    ingredients: ["chicken", "soy sauce", "vegetables", "garlic", "ginger", "oil"],
+                    instructions: "1. Cook chicken. 2. Add vegetables. 3. Add sauce. 4. Stir fry until done.",
+                    prep_time: "25 minutes",
+                    difficulty: "Easy"
+                },
+                {
+                    name: "Pancakes",
+                    ingredients: ["flour", "milk", "eggs", "sugar", "baking powder", "butter"],
+                    instructions: "1. Mix dry ingredients. 2. Add wet ingredients. 3. Cook on griddle.",
+                    prep_time: "15 minutes",
+                    difficulty: "Easy"
+                }
+            ];
+            displayRecipes(defaultRecipes, defaultRecipes.length);
+            resultCount.textContent = '💡 Try searching with ingredients you have!';
+        });
+
+        // Keyboard shortcut: Ctrl+Enter to search
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                searchRecipes();
+            }
+        });
+    </script>
+</body>
+</html>
