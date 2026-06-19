@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "name": "Spaghetti Carbonara",
+    "ingredients": ["pasta", "eggs", "parmesan", "bacon", "black pepper"],
+    "instructions": "1. Cook pasta. 2. Fry bacon. 3. Mix eggs with parmesan. 4. Combine everything.",
+    "prep_time": "20 minutes",
+    "difficulty": "Medium"
+  },
+  {
+    "id": 2,
+    "name": "Chicken Stir Fry",
+    "ingredients": ["chicken", "soy sauce", "vegetables", "garlic", "ginger", "oil"],
+    "instructions": "1. Cook chicken. 2. Add vegetables. 3. Add sauce. 4. Stir fry until done.",
+    "prep_time": "25 minutes",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 3,
+    "name": "Vegetable Soup",
+    "ingredients": ["carrots", "celery", "onions", "tomatoes", "vegetable broth", "garlic"],
+    "instructions": "1. Chop vegetables. 2. Saut\u00e9 onions and garlic. 3. Add broth and vegetables. 4. Simmer.",
+    "prep_time": "40 minutes",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 4,
+    "name": "Pancakes",
+    "ingredients": ["flour", "milk", "eggs", "sugar", "baking powder", "butter"],
+    "instructions": "1. Mix dry ingredients. 2. Add wet ingredients. 3. Cook on griddle.",
+    "prep_time": "15 minutes",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 5,
+    "name": "Caesar Salad",
+    "ingredients": ["lettuce", "parmesan", "croutons", "garlic", "olive oil", "eggs"],
+    "instructions": "1. Wash lettuce. 2. Make dressing. 3. Toss everything together.",
+    "prep_time": "15 minutes",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 6,
+    "name": "Beef Tacos",
+    "ingredients": ["beef", "tortillas", "cheese", "lettuce", "tomatoes", "salsa"],
+    "instructions": "1. Cook beef. 2. Warm tortillas. 3. Assemble tacos with toppings.",
+    "prep_time": "30 minutes",
+    "difficulty": "Medium"
+  }
+]
